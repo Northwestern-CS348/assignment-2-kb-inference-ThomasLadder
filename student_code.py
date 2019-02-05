@@ -116,6 +116,20 @@ class KnowledgeBase(object):
             print("Invalid ask:", fact.statement)
             return []
 
+
+
+    def retract_helper(self, fact_or_rule):
+            for factorrule in fact_or_rule.supports_facts:
+                if factorrule in self.facts:
+                    factorrule.supported_by.remove(fact_or_rule)
+                    kb_retract(fact_or_rule)
+                elif factorrule in self.rules:
+                    factorrule.supported_by.remove(fact_or_rule)
+                    kb_retract(fact_or_rule)
+
+
+
+
     def kb_retract(self, fact_or_rule):
         """Retract a fact from the KB
 
@@ -128,6 +142,22 @@ class KnowledgeBase(object):
         printv("Retracting {!r}", 0, verbose, [fact_or_rule])
         ####################################################
         # Student code goes here
+        kb = KnowledgeBase
+        if isinstance(fact_or_rule, Fact):
+            fact = fact_or_rule
+            rfact = kb._get_fact(fact)
+            if len(rfact.supported_by) == 0 and rfact.asserted == False:
+                retract_helper(rfact)
+            else:
+                rfact.asserted = False
+
+        if isinstance(fact_or_rule, Rule):
+            pass
+
+
+
+
+
         
 
 class InferenceEngine(object):
@@ -146,3 +176,34 @@ class InferenceEngine(object):
             [fact.statement, rule.lhs, rule.rhs])
         ####################################################
         # Student code goes here
+        if len(rule.lhs) == 1:
+            match_fact = match(fact.statement, rule.lhs[0])
+            if match_fact != False and match_fact != match(fact.statement, fact.statement):
+                newfact_statement = instantiate(rule.rhs, match_fact)
+                newfact = Fact(newfact_statement, [fact, rule])
+         #       if isinstance(newfact, Fact):
+                kb.kb_add(newfact)
+                fact.supports_facts.append(newfact)
+                rule.supports_facts.append(newfact)
+
+        elif len(rule.lhs) > 1:
+            listofstatements = []
+            for st in rule.lhs:
+                match_rule = match(fact.statement, st)
+                if match_rule != False and match_rule != match(fact.statement, fact.statement):
+                    newrule_instantiate = instantiate(rule.rhs, match_rule)
+         #           newrule_part = Rule(newrule_instantiate, [fact, rule])
+                    listofstatements.append(newrule_instantiate)
+            if listofstatements == []:
+                return False
+            else:
+                del listofstatements[0]
+                newrule = [listofstatements, rule.rhs]
+                kb.kb_add(newrule)
+                fact.supports_rules.append(newrule)
+                rule.supports_rules.append(newrule)
+
+
+
+
+
